@@ -7,8 +7,8 @@ libestr
 This library aims to simplify the use of some string manipultations:
 
 	String tokenizer
-  Basic string manipultations
-  String buffer
+	Basic string manipultations
+	String buffer
 	Etc ... See the demo applications for the list of supported modules.
 
 This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY.
