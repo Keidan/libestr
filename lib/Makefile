@@ -1,4 +1,5 @@
-SRC			= estr.c estrtoken.c estrbuffer.c
+#SRC			= estr.c estrtoken.c estrbuffer.c
+SRC			= estr.c
 OBJ			= $(SRC:.c=.o)
 INSTALL			= ../deploy/$(shell uname -m)
 LIB			= libestr.so
