@@ -25,6 +25,10 @@ int main(int argc, char** argv) {
   printf("Buffer after erase at 0 with len 1: '%s'\n", estr_to_str(b));
   estr_copy(b, "AZERTYUIOPQSDFGHJKLMWXCVBN");
   printf("Buffer after copy: '%s'\n", estr_to_str(b));
+  estr_tolower(b);
+  printf("Buffer after to lower: '%s'\n", estr_to_str(b));
+  estr_toupper(b);
+  printf("Buffer after to upper: '%s'\n", estr_to_str(b));
   estr_erase2(b, 5);
   printf("Buffer after erase2 from 5: '%s'\n", estr_to_str(b));
   estr_insert(b, 2, "blabla");
