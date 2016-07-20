@@ -43,7 +43,6 @@
 #include <regex.h>
 #include <errno.h>
 
-
 #define SMAGIC 0x8001
 #define EMAGIC 0x1337
 
@@ -64,7 +63,6 @@
     return;                                                 \
   }                                                         \
 }while(0)
-
 
 struct estr_s {
   int sm;
@@ -219,7 +217,7 @@ int estr_set_capacity(estr_t buffer, size_t capacity) {
   e->capacity = capacity;
   if(e->capacity > e->length) e->length = e->capacity;
   e->buffer = tmp;
-  e->buffer[e->capacity] = 0;
+  e->buffer[e->capacity - 1] = 0;
   return 0;
 }
 
@@ -416,7 +414,7 @@ int estr_insert(estr_t buffer, size_t index, char* str) {
   }
   if(index == estr_length(e))
     return estr_append(buffer, str);
-  tmp = malloc(e->length - index);
+  tmp = malloc((e->length - index) + 1);
   memcpy(tmp, e->buffer + index, e->length - index);
   tmp[e->length - index] = 0;
   bzero(e->buffer + index, e->length - index);
@@ -454,7 +452,7 @@ int estr_printf(estr_t buffer, const char* fmt, ...) {
  */
 int estr_vprintf(estr_t buffer, const char* fmt, va_list pa) {
   struct estr_s *e = (struct estr_s*) buffer;
-  estr_t tmp;
+  estr_t tmp= NULL;
   char *p, c;
   int i, count, idx;
   valid_ret(e, -1);
@@ -534,10 +532,14 @@ int estr_vprintf(estr_t buffer, const char* fmt, va_list pa) {
  */
 void estr_tolower(estr_t buffer) {
   struct estr_s *e = (struct estr_s*) buffer;
-  size_t i;
+  size_t i = 0;
+  char c = 0;
   valid_noret(e);
-  for(i = 0; i < e->length; i++)
-    e->buffer[i] = tolower(e->buffer[i]);
+  for(i = 0; i < e->length; i++) {
+    c = e->buffer[i];
+    if(c >= 65 && c <= 90) c += 32;
+    e->buffer[i] = c;
+  }
 }
 
 /**
@@ -547,10 +549,29 @@ void estr_tolower(estr_t buffer) {
  */
 void estr_toupper(estr_t buffer) {
   struct estr_s *e = (struct estr_s*) buffer;
-  size_t i;
+  size_t i = 0;
+  char c = 0;
   valid_noret(e);
-  for(i = 0; i < e->length; i++)
-    e->buffer[i] = toupper(e->buffer[i]);
+  for(i = 0; i < e->length; i++) {
+    c = e->buffer[i];
+    if(c >= 97 && c <= 122) c -= 32;
+    e->buffer[i] = c;
+  }
+}
+
+/**
+ * @fn char* estr_substring_c(const char* buffer, size_t begin, size_t len)
+ * @brief Substract a string.
+ * @param buffer Input string.
+ * @param begin Begin index.
+ * @param len Length.
+ * @return substring (free required).
+ */
+char* estr_substring_c(const char* buffer, size_t begin, size_t len) {
+  size_t l = buffer ? strlen(buffer) : 0; 
+  if (!l || l < begin || l < (begin+len)) 
+    return NULL; 
+  return strndup(buffer + begin, len); 
 }
 
 /**
@@ -812,12 +833,9 @@ const char* estr_hex2bin(const char* hexstr) {
  * @return true/false
  */
 _Bool estr_startswith(estr_t buffer, const char *prefix) {
-  size_t prefix_l;
   struct estr_s *e = (struct estr_s*) buffer;
   valid_ret(e, 0);
-  if(!prefix) return 0;
-  prefix_l = strlen(prefix);
-  return e->length < prefix_l ? 0 : strncmp(prefix, e->buffer, prefix_l) == 0;
+  return estr_startswith_c(e->buffer, e->length, prefix);
 }
 
 /**
@@ -828,11 +846,178 @@ _Bool estr_startswith(estr_t buffer, const char *prefix) {
  * @return true/false
  */
 _Bool estr_endswith(estr_t buffer, const char *suffix) {
-  size_t suffix_l;
   struct estr_s *e = (struct estr_s*) buffer;
   valid_ret(e, 0);
-  suffix_l = strlen(suffix);
-  if(suffix_l > e->length) return 0;
-  return strncmp(e->buffer + e->length - suffix_l, suffix, suffix_l) == 0;
+  return estr_endswith_c(e->buffer, e->length, suffix);
 }
+
+/**
+ * @fn _Bool estr_startswith_c(const char* buffer, size_t length, const char *prefix)
+ * @brief Test if the string starts with the prefix.
+ * @param str The source string.
+ * @param length The buffer length.
+ * @param prefix The prefix string to find.
+ * @return true/false
+ */
+_Bool estr_startswith_c(const char* buffer, size_t length, const char *prefix) {
+  size_t prefix_l;
+  if(!prefix) return 0;
+  prefix_l = strlen(prefix);
+  return length < prefix_l ? 0 : strncmp(prefix, buffer, prefix_l) == 0;
+}
+
+/**
+ * @fn _Bool estr_endswith_c(const char* buffer, size_t length, const char *suffix)
+ * @brief Test if the string ends with the suffix.
+ * @param str The source string.
+ * @param length The buffer length.
+ * @param suffix The suffix string to find.
+ * @return true/false
+ */
+_Bool estr_endswith_c(const char* buffer, size_t length, const char *suffix) {
+  size_t suffix_l;
+  suffix_l = strlen(suffix);
+  if(suffix_l > length) return 0;
+  return strncmp(buffer + length - suffix_l, suffix, suffix_l) == 0;
+}
+
+/*******************************************************************************
+ * ___________     __                  
+ * \__    ___/___ |  | __ ____   ____  
+ *   |    | /  _ \|  |/ // __ \ /    \ 
+ *   |    |(  <_> )    <\  ___/|   |  \
+ *   |____| \____/|__|_ \\___  >___|  /
+ *                     \/    \/     \/ 
+ ********************************************************************************/
+
+/**
+ * @fn int estr_split_with_buffer(estr_token_t token, estr_t buffer, const char* sep)
+ * @brief Split a str buffer to a token instance.
+ * @param token The token instance.
+ * @param buffer The string buffer.
+ * @param sep The split separator.
+ * @return 0 on success, -1 else (see errno).
+ */
+int estr_split_with_buffer(estr_token_t token, estr_t buffer, const char* sep) {
+  struct estr_s *e = (struct estr_s*) buffer;
+  valid_ret(e, -1);
+  return estr_split(token, e->buffer, sep);
+}
+
+/**
+ * @fn int estr_split(estr_token_t token, const char* buffer, const char* sep)
+ * @brief Split a str to a token instance.
+ * @param token The token instance.
+ * @param buffer The string to split.
+ * @param sep The split separator.
+ * @return 0 on success, -1 else (see errno).
+ */
+int estr_split(estr_token_t token, const char* buffer, const char* sep) {
+  struct estr_token_s *tok = (struct estr_token_s*) token;
+  errno = 0; /* reset errno */
+  if(!token || !buffer || !sep) {
+    errno = EINVAL;
+    return -1;
+  }
+  tok->buffer = (char*)buffer;
+  tok->sep = (char*)sep;
+  tok->len = strlen(buffer);
+  tok->offset = 0;
+  return 0;
+}
+
+/**
+ * @fn size_t estr_token_count(estrtoken_t tok)
+ * @brief Count the number of tokens.
+ * @param tok Token pointer.
+ * @return The number of tokens.
+ */
+size_t estr_token_count(estr_token_t tok) {
+  size_t offset, count = 0;
+  struct estr_token_s *t = (struct estr_token_s *)tok;
+  errno = 0; /* reset errno */
+  if(!t) {
+    errno = EINVAL;
+    return 0;
+  }
+  offset = t->offset;
+  t->offset = 0;
+  while(estr_token_has_more(t)) {
+    estr_token_next(t);
+    count++;
+  }
+  t->offset = offset;
+  return count;
+}
+
+
+/**
+ * @fn _Bool estr_token_has_more(estr_token_t tok)
+ * @brief Test if the token contains more tokens.
+ * @param tok Token pointer.
+ * @return 1 if has more else 0.
+ */
+_Bool estr_token_has_more(estr_token_t tok) {
+  struct estr_token_s *t = (struct estr_token_s *)tok;
+  errno = 0; /* reset errno */
+  if(!t) {
+    errno = EINVAL;
+    return 0;
+  }
+  return t->offset < t->len;
+}
+
+/**
+ * @fn static int estr_token_split_condition(char c, char* sep)
+ * @brief Test if the condition can be splited.
+ * @param c Char to test.
+ * @param sep Delimiter.
+ */
+static int estr_token_split_condition(char c, char* sep) {
+  unsigned int i;
+  for (i = 0; i< strlen(sep); i++)
+    if (c == sep[i]) return 1;
+  return 0; /* no matches*/
+}
+
+/**
+ * @fn char* estr_token_next(estr_token_t tok)
+ * @brief Get the next token.
+ * @param tok Token pointer
+ * @return New token else NULL (free is required for non NULL values)
+ */
+char* estr_token_next(estr_token_t tok) {
+  char c, *s;
+  int i = 0, end = 0;
+  struct estr_token_s *t = (struct estr_token_s *)tok;
+  errno = 0; /* reset errno */
+  if(!t) {
+    errno = EINVAL;
+    return 0;
+  }
+  /* search the next split */
+  /* check immediate end of look */
+  if (!estr_token_has_more(tok))
+    return NULL;
+  while (!end) {
+    /* check end of look */
+    if (t->offset + i >= t->len)
+      break;
+    /* look next char */
+    c = t->buffer[t->offset + i];
+    if (estr_token_split_condition(c, t->sep)) {
+      /* split here */
+      end = 1;
+    }
+    else i++;
+  }
+  s = estr_substring_c(t->buffer, t->offset, i);
+  t->offset += i + 1; /* go just after the sep */
+  if(!strlen(s)) {
+    free(s);
+    s = estr_token_next(tok);
+  }
+  return s;
+}
+
 

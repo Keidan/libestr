@@ -45,7 +45,11 @@ extern "C" {
   #include <string.h>
   #include <stdbool.h>
   #include <stdarg.h>
- 
+
+  /**
+   * @typedef estr_t
+   * @brief Easy string buffer context.
+   */
   typedef void* estr_t;
  
   /**
@@ -273,7 +277,6 @@ extern "C" {
    */
   char* estr_substring(estr_t buffer, size_t begin, size_t len);
 
-
   /**
    * @fn estr_t estr_substr(const char* str, size_t begin, size_t len)
    * @brief Substract a string.
@@ -283,7 +286,6 @@ extern "C" {
    * @return estr_delete required.
    */
   estr_t estr_substr(estr_t buffer, size_t begin, size_t len);
-
 
   /**
    * @fn int estr_indexof(estr_t buffer, const char* needed)
@@ -384,7 +386,6 @@ extern "C" {
    */
   const char* estr_hex2bin(const char* hexstr);
 
-
   /**
    * @fn _Bool estr_startswith(estr_t buffer, const char *prefix)
    * @brief Test if the string starts with the prefix.
@@ -402,6 +403,107 @@ extern "C" {
    * @return true/false
    */
   _Bool estr_endswith(estr_t buffer, const char *suffix);
+  
+  /**
+   * @fn _Bool estr_startswith_c(const char* buffer, size_t length, const char *prefix)
+   * @brief Test if the string starts with the prefix.
+   * @param str The source string.
+   * @param length The buffer length.
+   * @param prefix The prefix string to find.
+   * @return true/false
+   */
+  _Bool estr_startswith_c(const char* buffer, size_t length, const char *prefix);
+
+  /**
+   * @fn _Bool estr_endswith_c(const char* buffer, size_t length, const char *suffix)
+   * @brief Test if the string ends with the suffix.
+   * @param str The source string.
+   * @param length The buffer length.
+   * @param suffix The suffix string to find.
+   * @return true/false
+   */
+  _Bool estr_endswith_c(const char* buffer, size_t length, const char *suffix);
+  
+  /**
+   * @fn char* estr_substring_c(const char* buffer, size_t begin, size_t len)
+   * @brief Substract a string.
+   * @param buffer Input string.
+   * @param begin Begin index.
+   * @param len Length.
+   * @return substring (free required).
+   */
+  char* estr_substring_c(const char* buffer, size_t begin, size_t len);
+
+
+  /*******************************************************************************
+   * ___________     __                  
+   * \__    ___/___ |  | __ ____   ____  
+   *   |    | /  _ \|  |/ // __ \ /    \ 
+   *   |    |(  <_> )    <\  ___/|   |  \
+   *   |____| \____/|__|_ \\___  >___|  /
+   *                     \/    \/     \/ 
+   ********************************************************************************/
+   
+  /**
+   * @struct estr_token_s
+   * @brief String token context.
+   */
+  struct estr_token_s {
+    char   *buffer;  /**< Token buffer. */
+    char   *sep;     /**< Separator. */
+    size_t len;      /**< Buffer length. */
+    size_t offset;   /**< Current buffer offset. */
+  };
+
+  /**
+   * @typedef estr_token_t
+   * @brief String token pointer.
+   */
+  typedef struct estr_token_s *estr_token_t; 
+
+  /**
+   * @fn int estr_split_with_buffer(estr_token_t token, estr_t buffer, const char* sep)
+   * @brief Split a str buffer to a token instance.
+   * @param token The token instance.
+   * @param buffer The string buffer.
+   * @param sep The split separator.
+   * @return 0 on success, -1 else (see errno).
+   */
+  int estr_split_with_buffer(estr_token_t token, estr_t buffer, const char* sep);
+
+  /**
+   * @fn int estr_split(estr_token_t token, const char* buffer, const char* sep)
+   * @brief Split a str to a token instance.
+   * @param token The token instance.
+   * @param buffer The string to split.
+   * @param sep The split separator.
+   * @return 0 on success, -1 else (see errno).
+   */
+  int estr_split(estr_token_t token, const char* buffer, const char* sep);
+
+  /**
+   * @fn size_t estr_token_count(estrtoken_t tok)
+   * @brief Count the number of tokens.
+   * @param tok Token pointer.
+   * @return The number of tokens.
+   */
+  size_t estr_token_count(estr_token_t tok);
+
+  /**
+   * @fn _Bool estr_token_has_more(estr_token_t tok)
+   * @brief Test if the token contains more tokens.
+   * @param tok Token pointer.
+   * @return 1 if has more else 0.
+   */
+  _Bool estr_token_has_more(estr_token_t tok);
+
+  /**
+   * @fn char* estr_token_next(estr_token_t tok)
+   * @brief Get the next token.
+   * @param tok Token pointer
+   * @return New token else NULL (free is required for non NULL values)
+   */
+  char* estr_token_next(estr_token_t tok);
       
 #ifdef __cplusplus
 }

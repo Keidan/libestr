@@ -26,7 +26,7 @@ exec:
 	@for i in $(shell find ./demo -name *.elf | sort); do \
 	  echo "Execute $$(basename $$i .elf):"; \
 	  cd $$(dirname $$i); \
-	  (LD_LIBRARY_PATH=../../deploy/$$(uname -m) ./$$(basename $$i) &);\
+	  (LD_LIBRARY_PATH=../../deploy/$$(uname -m) ./$$(basename $$i));\
 	  cd -;\
 	  echo ""; \
 	done
